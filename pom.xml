@@ -871,7 +871,7 @@
     <surefire.version>3.0.0-M6</surefire.version>
     <wagon.ssh.version>2.12</wagon.ssh.version>
     <xml.maven.version>1.0.1</xml.maven.version>
-    <spotless.version>2.27.2</spotless.version>
+    <spotless.version>2.38.0</spotless.version>
     <maven-site.version>3.12.0</maven-site.version>
     <!-- compression -->
     <aircompressor.version>0.21</aircompressor.version>
@@ -2759,7 +2759,8 @@
           <!-- define a language-specific format -->
           <java>
             <excludes>
-              <exclude>**/generated/*</exclude>
+              <exclude>**/generated/**</exclude>
+              <exclude>**/target/**</exclude>
               <exclude>**/package-info.java</exclude>
             </excludes>
             <!--
@@ -2797,25 +2798,55 @@
               <searchRegex>^ */\*\* *@return *(.*) *\*/$</searchRegex>
               <replacement>/** Returns $1 */</replacement>
             </replaceRegex>
+            <!-- Cleanthat will refactor your code, but it may break your style: apply it before your formatter -->
+            <cleanthat/>
             <!-- apply a specific flavor -->
             <eclipse>
               <file>${session.executionRootDirectory}/dev-support/hbase_eclipse_formatter.xml</file>
             </eclipse>
+            <!-- standard import order -->
             <importOrder>
               <file>${session.executionRootDirectory}/dev-support/eclipse.importorder</file>
             </importOrder>
             <trimTrailingWhitespace/>
             <endWithNewline/>
+            <!-- Removing unused imports at the top of each file. -->
             <removeUnusedImports/>
+            <!-- Fixes formatting of type annotations that may have occurred earlier in the formatting process. -->
+            <formatAnnotations/>
           </java>
           <pom>
             <sortPom>
+              <!-- The encoding of the pom files -->
+              <encoding>UTF-8</encoding>
+              <!-- Should empty elements be expanded-->
               <expandEmptyElements>false</expandEmptyElements>
+              <!-- Should a space be added inside self-closing elements-->
+              <spaceBeforeCloseEmptyElement>false</spaceBeforeCloseEmptyElement>
+              <!-- Keep empty lines -->
+              <keepBlankLines>true</keepBlankLines>
+              <!-- Indentation -->
+              <nrOfIndentSpace>4</nrOfIndentSpace>
+              <!-- Should empty lines be indented -->
+              <indentBlankLines>false</indentBlankLines>
+              <!-- Should schema locations be indented -->
+              <indentSchemaLocation>true</indentSchemaLocation>
+              <!--
+              Sort order of elements: https://github.com/Ekryd/sortpom/wiki/PredefinedSortOrderProfiles
+              recommended_2008_06 - The POM Code Convention that was chosen by Maven developers in 2008 (default for 3.0.0+)
+              -->
+              <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
+              <!-- Sort dependency exclusions: https://github.com/Ekryd/sortpom/wiki/SortDependencies-->
+              <sortDependencyExclusions/>
+              <!-- Sort properties -->
+              <sortProperties>true</sortProperties>
+              <!-- Sort plugin executions -->
+              <sortExecutions>false</sortExecutions>
             </sortPom>
           </pom>
           <formats>
             <!-- you can define as many formats as you want, each is independent -->
-            <format>
+            <format name="Scripts">
               <!-- define the files to apply to -->
               <includes>
                 <include>**/*.xml</include>
@@ -2823,9 +2854,7 @@
                 <include>**/*.py</include>
                 <include>**/Jenkinsfile*</include>
                 <include>**/*.md</include>
-                <include>*.md</include>
                 <include>**/*.txt</include>
-                <include>*.txt</include>
               </includes>
               <excludes>
                 <exclude>**/target/**</exclude>
@@ -2836,17 +2865,92 @@
               <endWithNewline/>
             </format>
             <format>
+              <includes>
+                <include>**/*.sh</include>
+                <!--include>**/*.rb</include-->
+                <include>**/*.py</include>
+                <include>**/*.Dockerfile*</include>
+                <include>**/*.properties</include>
+              </includes>
+              <excludes>
+                <exclude>**/target/**</exclude>
+                <exclude>**/gen-*</exclude>
+              </excludes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header-hash</file>
+                <delimiter>\n</delimiter>
+                <skipLinesMatching>^#!/</skipLinesMatching>
+              </licenseHeader>
+            </format>
+            <format>
+              <includes>
+                <include>**/*.Jenkinsfile*</include>
+              </includes>
+              <excludes>
+                <exclude>**/target/**</exclude>
+                <exclude>**/gen-*</exclude>
+              </excludes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header</file>
+                <delimiter>(\n|pipeline)</delimiter>
+              </licenseHeader>
+            </format>
+            <format>
+              <includes>
+                <include>**/*.md</include>
+              </includes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header-html-comment</file>
+                <delimiter>--&gt;</delimiter>
+                <skipLinesMatching>^(&lt;\?xml)|(&lt;project)</skipLinesMatching>
+              </licenseHeader>
+            </format>
+            <format>
+              <includes>
+                <include>**/*.xml</include>
+              </includes>
+              <excludes>
+                <exclude>**/*pom.xml</exclude>
+                <exclude>**/target/**</exclude>
+              </excludes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header-html-comment</file>
+                <delimiter>--&gt;</delimiter>
+                <skipLinesMatching>^(&lt;\?xml)|(&lt;project)</skipLinesMatching>
+              </licenseHeader>
+            </format>
+            <format>
+              <includes>
+                <include>**/*.adoc</include>
+              </includes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header-adoc</file>
+                <delimiter>(////|=|\[|:)</delimiter>
+              </licenseHeader>
+            </format>
+            <format>
               <!--
                 We have some files which have special license header which must be kept, so
                 here we add a special format section to apply license header, and leave the
                 java section above only used for formatting code style
               -->
               <includes>
-                <include>src/main/java/**/*.java</include>
-                <include>src/test/java/**/*.java</include>
+                <include>src/main/**/*.java</include>
+                <include>src/test/**/*.java</include>
               </includes>
               <excludes>
-                <exclude>**/generated/*</exclude>
+                <exclude>**/target/**</exclude>
+                <exclude>**/generated/**</exclude>
                 <exclude>**/package-info.java</exclude>
                 <!-- ByteRange, from Google protobuf -->
                 <exclude>src/main/java/org/apache/hadoop/hbase/util/AbstractByteRange.java</exclude>
@@ -2865,6 +2969,39 @@
               <licenseHeader>
                 <file>${session.executionRootDirectory}/dev-support/license-header</file>
                 <delimiter>package</delimiter>
+              </licenseHeader>
+            </format>
+            <format>
+              <includes>
+                <include>**/*.rb</include>
+              </includes>
+              <excludes>
+                <exclude>**/target/**</exclude>
+              </excludes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <prettier>
+                <devDependencyProperties>
+                  <property>
+                    <name>prettier</name>
+                    <value>2.7.1</value>
+                  </property>
+                  <property>
+                    <name>@prettier/plugin-ruby</name>
+                    <value>3.2.2</value>
+                  </property>
+                </devDependencyProperties>
+                <configFile>${session.executionRootDirectory}/dev-support/.rubocop.yaml</configFile>
+                <config>
+                  <useTabs>true</useTabs>
+                  <parser>ruby</parser>
+                </config>
+              </prettier>
+
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header-hash</file>
+                <delimiter>\n</delimiter>
+                <skipLinesMatching>^#!/</skipLinesMatching>
               </licenseHeader>
             </format>
           </formats>

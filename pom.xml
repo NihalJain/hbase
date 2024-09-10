@@ -523,7 +523,7 @@
     </site>
   </distributionManagement>
   <properties>
-    <revision>2.6.1-SNAPSHOT</revision>
+    <revision>2.7.0-SNAPSHOT</revision>
     <!-- override on command line to have generated LICENSE files include
          diagnostic info for verifying notice requirements -->
     <license.debug.print.included>false</license.debug.print.included>
@@ -595,9 +595,8 @@
     <jaxb-api.version>2.3.1</jaxb-api.version>
     <servlet.api.version>3.1.0</servlet.api.version>
     <wx.rs.api.version>2.1.1</wx.rs.api.version>
-    <glassfish.jsp.version>2.3.2</glassfish.jsp.version>
-    <glassfish.el.version>3.0.1-b08</glassfish.el.version>
-    <jruby.version>9.3.13.0</jruby.version>
+    <tomcat.jasper.version>9.0.93</tomcat.jasper.version>
+    <jruby.version>9.4.8.0</jruby.version>
     <junit.version>4.13.2</junit.version>
     <hamcrest.version>1.3</hamcrest.version>
     <opentelemetry.version>1.15.0</opentelemetry.version>
@@ -608,9 +607,6 @@
     <external.protobuf.groupid>com.google.protobuf</external.protobuf.groupid>
     <external.protobuf.version>2.5.0</external.protobuf.version>
     <external.protoc.version>${external.protobuf.version}</external.protoc.version>
-    <!--Version of protobuf that hbase uses internally (we shade our pb)
-         Must match what is out in hbase-thirdparty include. -->
-    <internal.protobuf.version>4.26.1</internal.protobuf.version>
     <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
     <thrift.path>thrift</thrift.path>
     <thrift.version>0.14.1</thrift.version>
@@ -1320,20 +1316,29 @@
       </dependency>
       <dependency>
         <!--This lib has JspC in it. Needed precompiling jsps in hbase-rest, etc.-->
-        <groupId>org.glassfish.web</groupId>
-        <artifactId>javax.servlet.jsp</artifactId>
-        <version>${glassfish.jsp.version}</version>
+        <groupId>org.apache.tomcat</groupId>
+        <artifactId>tomcat-jasper</artifactId>
+        <version>${tomcat.jasper.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jdt</groupId>
+            <artifactId>ecj</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jsp-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <!-- this lib is used by the compiled Jsp from the above JspC -->
         <groupId>javax.servlet.jsp</groupId>
         <artifactId>javax.servlet.jsp-api</artifactId>
         <version>2.3.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish</groupId>
-        <artifactId>javax.el</artifactId>
-        <version>${glassfish.el.version}</version>
       </dependency>
       <dependency>
         <groupId>javax.xml.bind</groupId>
@@ -1882,43 +1887,6 @@
             <clearOutputDirectory>false</clearOutputDirectory>
             <checkStaleness>true</checkStaleness>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>com.google.code.maven-replacer-plugin</groupId>
-          <artifactId>replacer</artifactId>
-          <version>1.5.3</version>
-          <configuration>
-            <basedir>${basedir}/target/generated-sources/</basedir>
-            <includes>
-              <include>**/*.java</include>
-            </includes>
-            <!-- Ignore errors when missing files, because it means this build
-                   was run with -Dprotoc.skip and there is no -Dreplacer.skip -->
-            <ignoreErrors>true</ignoreErrors>
-            <replacements>
-              <replacement>
-                <token>([^\.])com.google.protobuf</token>
-                <value>$1org.apache.hbase.thirdparty.com.google.protobuf</value>
-              </replacement>
-              <replacement>
-                <token>(public)(\W+static)?(\W+final)?(\W+class)</token>
-                <value>@javax.annotation.Generated("proto") $1$2$3$4</value>
-              </replacement>
-              <!-- replacer doesn't support anchoring or negative lookbehind -->
-              <replacement>
-                <token>(@javax.annotation.Generated\("proto"\) ){2}</token>
-                <value>$1</value>
-              </replacement>
-            </replacements>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>replace</goal>
-              </goals>
-              <phase>process-sources</phase>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <!-- Approach followed here is roughly the same as mentioned here:
@@ -3022,10 +2990,6 @@
               <artifactId>maven-javadoc-plugin</artifactId>
               <version>${maven.javadoc.version}</version>
               <configuration>
-                <sourceFileExcludes>
-                  <exclude>**/generated/*</exclude>
-                  <exclude>**/protobuf/*</exclude>
-                </sourceFileExcludes>
                 <source>${compileSource}</source>
                 <!--
                   Need to add this option to ignore the source errors, epsecially that we reference

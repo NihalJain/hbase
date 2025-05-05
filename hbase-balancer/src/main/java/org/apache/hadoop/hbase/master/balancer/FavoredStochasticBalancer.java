@@ -328,7 +328,10 @@ public class FavoredStochasticBalancer extends StochasticLoadBalancer
     throws IOException {
     Map<RegionInfo, List<ServerName>> regionFNMap = Maps.newHashMap();
     regionFNMap.put(regionInfo, newFavoredNodes);
+    LOG.info(
+      "Updating FN in meta for region: " + regionInfo + " with favored nodes: " + newFavoredNodes);
     fnm.updateFavoredNodes(regionFNMap);
+    LOG.info("Updated FN in meta for region: " + regionInfo);
   }
 
   /**
@@ -471,14 +474,21 @@ public class FavoredStochasticBalancer extends StochasticLoadBalancer
       Set<ServerName> regionAFN =
         getInheritedFNForDaughter(helper, parentFavoredNodes, PRIMARY, SECONDARY);
       result.put(regionA, Lists.newArrayList(regionAFN));
+      LOG.info("Inherited FN for daughter regionA: " + regionA + " from parent: " + parent
+        + " with favored nodes: " + regionAFN);
 
       // Lets get the primary and tertiary from parent for regionB
       Set<ServerName> regionBFN =
         getInheritedFNForDaughter(helper, parentFavoredNodes, PRIMARY, TERTIARY);
       result.put(regionB, Lists.newArrayList(regionBFN));
+      LOG.info("Inherited FN for daughter regionB: " + regionB + " from parent: " + parent
+        + " with favored nodes: " + regionBFN);
     }
 
+    LOG.info(
+      "Updating FN in meta for daughters of region: " + parent + " with favored nodes: " + result);
     fnm.updateFavoredNodes(result);
+    LOG.info("Updated FN in meta for daughters of region: " + parent);
   }
 
   private Set<ServerName> getInheritedFNForDaughter(FavoredNodeAssignmentHelper helper,

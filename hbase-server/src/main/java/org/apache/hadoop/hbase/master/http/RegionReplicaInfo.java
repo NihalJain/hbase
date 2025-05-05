@@ -55,6 +55,7 @@ public final class RegionReplicaInfo {
   private final ServerName targetServerName;
   private final Map<String, RegionInfo> mergeRegionInfo;
   private final Map<String, RegionInfo> splitRegionInfo;
+  private final List<ServerName> favoredNodes;
 
   private RegionReplicaInfo(final Result result, final HRegionLocation location) {
     this.row = result != null ? result.getRow() : null;
@@ -82,6 +83,7 @@ public final class RegionReplicaInfo {
     } else {
       this.splitRegionInfo = null;
     }
+    this.favoredNodes = MetaTableAccessor.getFavoredNodes(result, regionInfo.getReplicaId());
   }
 
   public static List<RegionReplicaInfo> from(final Result result) {
@@ -146,6 +148,10 @@ public final class RegionReplicaInfo {
     return splitRegionInfo;
   }
 
+  public List<ServerName> getFavoredNodes() {
+    return favoredNodes;
+  }
+
   @Override
   public boolean equals(Object other) {
     if (this == other) {
@@ -162,6 +168,7 @@ public final class RegionReplicaInfo {
       .append(regionState, that.regionState).append(serverName, that.serverName)
       .append(seqNum, that.seqNum).append(targetServerName, that.targetServerName)
       .append(mergeRegionInfo, that.mergeRegionInfo).append(splitRegionInfo, that.splitRegionInfo)
+      .append(favoredNodes, that.favoredNodes)
       .isEquals();
   }
 
@@ -169,7 +176,7 @@ public final class RegionReplicaInfo {
   public int hashCode() {
     return new HashCodeBuilder(17, 37).append(row).append(regionInfo).append(regionState)
       .append(serverName).append(seqNum).append(targetServerName).append(mergeRegionInfo)
-      .append(splitRegionInfo).toHashCode();
+      .append(splitRegionInfo).append(favoredNodes).toHashCode();
   }
 
   @Override
@@ -178,6 +185,8 @@ public final class RegionReplicaInfo {
       .append("row", Bytes.toStringBinary(row)).append("regionInfo", regionInfo)
       .append("regionState", regionState).append("serverName", serverName).append("seqNum", seqNum)
       .append("transitioningOnServerName", targetServerName).append("merge*", mergeRegionInfo)
-      .append("split*", splitRegionInfo).toString();
+      .append("split*", splitRegionInfo)
+      .append("fn", favoredNodes != null ? favoredNodes : "null")
+      .toString();
   }
 }

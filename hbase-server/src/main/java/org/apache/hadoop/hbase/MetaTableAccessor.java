@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -47,11 +48,13 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SubstringComparator;
 import org.apache.hadoop.hbase.master.RegionState;
+import org.apache.hadoop.hbase.shaded.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.ExceptionUtil;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.PairOfSameType;
+import org.apache.hbase.thirdparty.com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -561,6 +564,38 @@ public final class MetaTableAccessor {
     }
     return ServerName.parseServerName(
       Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
+  }
+
+  /**
+   * Returns the favored nodes for the region in the catalog table {@link Result}.
+   * @param r
+   * @param replicaId
+   * @return
+   */
+  @Nullable
+  public static List<ServerName> getFavoredNodes(final Result r, final int replicaId) {
+    final Cell favoredNodesBytes = r.getColumnLatestCell(HConstants.CATALOG_FAMILY,
+      CatalogFamilyFormat.getFavoredNodesColumn(replicaId));
+    if (favoredNodesBytes == null) {
+      return null;
+    }
+    HBaseProtos.FavoredNodes favoredNodes;
+    try {
+      favoredNodes = HBaseProtos.FavoredNodes.parseFrom(
+        ByteBuffer.wrap(favoredNodesBytes.getValueArray(), favoredNodesBytes.getValueOffset(),
+          favoredNodesBytes.getValueLength()));
+    } catch (InvalidProtocolBufferException e) {
+      LOG.error("Ignoring invalid favored nodes protobuf for region " + r, e);
+      return null;
+    }
+    List<ServerName> serverNames = new ArrayList<>();
+    for (HBaseProtos.ServerName protoServerName : favoredNodes.getFavoredNodeList()) {
+      ServerName serverName =
+        ServerName.valueOf(protoServerName.getHostName(), protoServerName.getPort(),
+          protoServerName.getStartCode());
+      serverNames.add(serverName);
+    }
+    return serverNames;
   }
 
   /**

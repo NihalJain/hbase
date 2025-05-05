@@ -441,6 +441,8 @@ final class RSGroupInfoManagerImpl implements RSGroupInfoManager {
       newGroupMap.putAll(rsGroupInfos);
       flushConfig(newGroupMap);
     }
+
+    // TODO: Update favored nodes here??
     LOG.info("Remove decommissioned servers {} from RSGroup done", servers);
   }
 
@@ -1252,6 +1254,8 @@ final class RSGroupInfoManagerImpl implements RSGroupInfoManager {
   public void setRSGroup(Set<TableName> tables, String groupName) throws IOException {
     getRSGroupInfo(groupName);
     moveTablesAndWait(tables, groupName);
+
+    // TODO: Update favored nodes here??
   }
 
   public void moveServers(Set<Address> servers, String targetGroupName) throws IOException {

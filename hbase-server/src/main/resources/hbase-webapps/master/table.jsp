@@ -534,6 +534,7 @@
       <th title="The server to which the region is transiting, stored in <%= serverNameColumnName %> column">Target Server</th>
       <th title="The parents regions if this region is undergoing a merge">info:merge*</th>
       <th title="The daughter regions if this region is split">info:split*</th>
+      <th title="The servers which are set as favored node for this regions">fn</th>
     </tr>
   <%
     final boolean metaScanHasMore;
@@ -588,6 +589,11 @@
         splitRegions.entrySet().stream()
           .map(entry -> String.format(regionSpanFormat, entry.getKey(), entry.getValue().getRegionNameAsString()))
           .collect(Collectors.joining("<br/>"));
+      final String fnServerNames = regionReplicaInfo.getFavoredNodes() != null
+        ? regionReplicaInfo.getFavoredNodes().stream()
+        .map(ServerName::toString)
+        .collect(Collectors.joining(";"))
+        : "";
   %>
     <tr>
       <td title="<%= regionInfoColumnName %>"><%= regionNameDisplay %></td>
@@ -600,6 +606,7 @@
       <td title="<%= serverNameColumnName %>"><%= targetServerName %></td>
       <td><%= mergeRegionNames %></td>
       <td><%= splitName %></td>
+      <td><%= fnServerNames.toString() %></td>
     </tr>
   <%
       }

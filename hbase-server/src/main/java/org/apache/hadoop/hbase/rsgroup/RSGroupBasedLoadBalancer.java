@@ -43,6 +43,7 @@ import org.apache.hadoop.hbase.master.RegionPlan;
 import org.apache.hadoop.hbase.master.balancer.ClusterInfoProvider;
 import org.apache.hadoop.hbase.master.balancer.LoadBalancerFactory;
 import org.apache.hadoop.hbase.master.balancer.MasterClusterInfoProvider;
+import org.apache.hadoop.hbase.master.balancer.StochasticLoadBalancer;
 import org.apache.hadoop.hbase.net.Address;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.ReflectionUtils;
@@ -72,10 +73,10 @@ import org.apache.hbase.thirdparty.com.google.common.collect.Maps;
 public class RSGroupBasedLoadBalancer implements LoadBalancer {
   private static final Logger LOG = LoggerFactory.getLogger(RSGroupBasedLoadBalancer.class);
 
-  private MasterServices masterServices;
+  protected MasterServices masterServices;
   private ClusterInfoProvider provider;
-  private FavoredNodesManager favoredNodesManager;
-  private volatile RSGroupInfoManager rsGroupInfoManager;
+  protected FavoredNodesManager favoredNodesManager;
+  protected volatile RSGroupInfoManager rsGroupInfoManager;
   private volatile LoadBalancer internalBalancer;
 
   /**
@@ -259,7 +260,7 @@ public class RSGroupBasedLoadBalancer implements LoadBalancer {
     }
   }
 
-  private List<ServerName> filterOfflineServers(RSGroupInfo RSGroupInfo,
+  protected List<ServerName> filterOfflineServers(RSGroupInfo RSGroupInfo,
     List<ServerName> onlineServers) {
     if (RSGroupInfo != null) {
       return filterServers(RSGroupInfo.getServers(), onlineServers);
@@ -333,31 +334,12 @@ public class RSGroupBasedLoadBalancer implements LoadBalancer {
 
   @Override
   public void initialize() throws IOException {
-    if (rsGroupInfoManager == null) {
-      rsGroupInfoManager = masterServices.getRSGroupInfoManager();
-      if (rsGroupInfoManager == null) {
-        String msg = "RSGroupInfoManager hasn't been initialized";
-        LOG.error(msg);
-        throw new HBaseIOException(msg);
-      }
-      rsGroupInfoManager.start();
-    }
+    initializeInternal(StochasticLoadBalancer.class);
+  }
 
-    // Create the balancer
-    Configuration conf = masterServices.getConfiguration();
-    Class<? extends LoadBalancer> balancerClass;
-    @SuppressWarnings("deprecation")
-    String balancerClassName = conf.get(HBASE_RSGROUP_LOADBALANCER_CLASS);
-    if (balancerClassName == null) {
-      balancerClass = conf.getClass(HConstants.HBASE_MASTER_LOADBALANCER_CLASS,
-        LoadBalancerFactory.getDefaultLoadBalancerClass(), LoadBalancer.class);
-    } else {
-      try {
-        balancerClass = Class.forName(balancerClassName).asSubclass(LoadBalancer.class);
-      } catch (ClassNotFoundException e) {
-        throw new IOException(e);
-      }
-    }
+  protected void initializeInternal(Class defaultClass) throws IOException {
+    initializeRSGroupInfoManager();
+    Class<? extends LoadBalancer> balancerClass = getSubBalancerClassName(defaultClass);
     this.provider = new MasterClusterInfoProvider(masterServices);
     // avoid infinite nesting
     if (getClass().isAssignableFrom(balancerClass)) {
@@ -372,7 +354,31 @@ public class RSGroupBasedLoadBalancer implements LoadBalancer {
     }
     internalBalancer.initialize();
     // init fallback groups
-    this.fallbackEnabled = conf.getBoolean(FALLBACK_GROUP_ENABLE_KEY, false);
+    this.fallbackEnabled =
+      masterServices.getConfiguration().getBoolean(FALLBACK_GROUP_ENABLE_KEY, false);
+  }
+
+  private void initializeRSGroupInfoManager() throws HBaseIOException {
+    if (rsGroupInfoManager == null) {
+      rsGroupInfoManager = masterServices.getRSGroupInfoManager();
+      if (rsGroupInfoManager == null) {
+        String msg = "RSGroupInfoManager hasn't been initialized";
+        LOG.error(msg);
+        throw new HBaseIOException(msg);
+      }
+      rsGroupInfoManager.start();
+    }
+  }
+
+  private Class<? extends LoadBalancer> getSubBalancerClassName(Class defaultClass) {
+    Class<? extends LoadBalancer> balancerClass = masterServices.getConfiguration()
+      .getClass(HConstants.HBASE_RSGROUP_LOADBALANCER_CLASS, defaultClass, LoadBalancer.class);
+    if (this.getClass().isAssignableFrom(balancerClass)) {
+      LOG.warn("The internal balancer of RSGroupBasedLoadBalancer cannot be itself, "
+        + "falling back to the default LoadBalancer class");
+      balancerClass = LoadBalancerFactory.getDefaultLoadBalancerClass();
+    }
+    return balancerClass;
   }
 
   public boolean isOnline() {

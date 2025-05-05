@@ -131,8 +131,16 @@ public final class HConstants {
   /** Cluster is in distributed mode or not */
   public static final String CLUSTER_DISTRIBUTED = "hbase.cluster.distributed";
 
-  /** Config for pluggable load balancers */
+  /**
+   * Config for pluggable based load balancers: This must be an instance of RSGroupBasedLoadBalancer.
+   */
   public static final String HBASE_MASTER_LOADBALANCER_CLASS = "hbase.master.loadbalancer.class";
+
+  /**
+   * Config for pluggable per group load balancer for the base load balancer. This must be an
+   * instance of LoadBalancer.
+   */
+  public static String HBASE_RSGROUP_LOADBALANCER_CLASS = "hbase.rsgroup.grouploadbalancer.class";
 
   /** Config for balancing the cluster by table */
   public static final String HBASE_MASTER_LOADBALANCE_BYTABLE = "hbase.master.loadbalance.bytable";

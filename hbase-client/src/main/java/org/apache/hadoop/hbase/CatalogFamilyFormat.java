@@ -330,6 +330,18 @@ public class CatalogFamilyFormat {
   }
 
   /**
+   * Returns the column qualifier for serialized favored nodes
+   * @param replicaId the replicaId of the region
+   * @return a byte[] for favored node qualifier
+   */
+  public static byte[] getFavoredNodesColumn(int replicaId) {
+    return replicaId == 0
+      ? Bytes.toBytes("fn")
+      : Bytes.toBytes("fn" + META_REPLICA_ID_DELIMITER
+      + String.format(RegionInfo.REPLICA_ID_FORMAT, replicaId));
+  }
+
+  /**
    * Decode table state from META Result. Should contain cell from HConstants.TABLE_FAMILY
    * @return null if not found
    */

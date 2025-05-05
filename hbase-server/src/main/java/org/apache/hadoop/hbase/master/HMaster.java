@@ -809,7 +809,7 @@ public class HMaster extends HBaseServerBase<MasterRpcServices> implements Maste
       conf.setClass(HConstants.HBASE_MASTER_LOADBALANCER_CLASS, MaintenanceLoadBalancer.class,
         LoadBalancer.class);
     }
-    this.balancer = new RSGroupBasedLoadBalancer();
+    this.balancer = LoadBalancerFactory.getBaseLoadBalancer(conf);
     this.loadBalancerStateStore = new LoadBalancerStateStore(masterRegion, zooKeeper);
 
     this.regionNormalizerManager =

@@ -903,7 +903,7 @@
     <opentelemetry.version>1.49.0</opentelemetry.version>
     <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
     <opentelemetry-javaagent.version>2.15.0</opentelemetry-javaagent.version>
-    <log4j2.version>2.17.2</log4j2.version>
+    <log4j2.version>2.25.3</log4j2.version>
     <mockito.version>4.11.0</mockito.version>
     <byte-buddy.version>1.15.11</byte-buddy.version>
     <!--
@@ -972,7 +972,7 @@
     <refguide.fontawesome.version>4.7.0</refguide.fontawesome.version>
     <refguide.mathjax.version>2.7.0</refguide.mathjax.version>
     <!-- compression -->
-    <aircompressor.version>0.27</aircompressor.version>
+    <aircompressor.version>2.0.3</aircompressor.version>
     <brotli4j.version>1.11.0</brotli4j.version>
     <lz4.version>1.8.0</lz4.version>
     <snappy.version>1.1.10.4</snappy.version>
